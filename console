@@ -1,0 +1,8 @@
+#!/usr/bin/env ruby
+
+require_relative './client'
+
+url = ARGV.shift || 'http://localhost:3141'
+
+client = Client.new token: '724fe6f0-b08f-4db5-ab8c-e835fa075c7b', url: url
+client.console
