@@ -1,0 +1,24 @@
+# TODO: 
+# - look into a zero-downtime sort of strategy
+# - consider keter or similar with a CI => /opt/keter/incoming push
+---
+- hosts: pibase
+  remote_user: ubuntu
+  tasks:
+    - name: Stop service 
+      become: true
+      service:
+        name: pi-base
+        state: stopped
+    - name: Pull binary
+      raw: "curl -o /app/server/pi-base-server https://{{ server_version }}-83251781-gh.circle-artifacts.com/0/tmp/artifacts/pi-base-server"
+    - name: Write version
+      copy:
+        dest: /app/server/version.txt
+        content: "{{ server_version }}\n"
+    - name: Restart service 
+      become: true
+      service:
+        name: pi-base
+        state: started
+  

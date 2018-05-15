@@ -1,0 +1,54 @@
+---
+- hosts: pibase
+  remote_user: ubuntu
+  tasks:
+    # Install and set up nginx / vhosts
+    - name: Install nginx
+      become: yes
+      apt:
+        name: nginx
+        state: latest
+
+    # TODO: cross-reference the .site files in templates with the active config 
+    # and install them in active-sites
+
+    # Install postgresql
+    - name: Install postgresql
+      become: yes
+      apt:
+        name: postgresql
+        state: latest
+
+    # TODO: configure initial database, user, password
+
+    # Create directories
+    - name: Create data directory
+      file:
+        path: /app/data
+        state: directory
+    - name: Create server directory
+      file:
+        path: /app/server
+        state: directory
+    - name: Create frontend directory
+      file:
+        path: /app/viewer
+        state: directory
+     
+    # Install git and clone repo
+    - name: Install git
+      become: yes
+      apt:
+        name: git
+        state: latest
+      
+    # TODO: configure /app/server/.env ?
+    # These settings are sensitive, but we could at least provide an example
+        
+    # Install initial versions of front / backend
+    - name: Configure service
+      become: yes
+      copy:
+        src: templates/pi-base.service
+        dest: /etc/systemd/system/pi-base.service
+    # TODO: do we need to `systemctl daemon-reload`? Only on change?

@@ -1,0 +1,11 @@
+[Service]
+EnvironmentFile=/app/server/.env
+ExecStart=/app/server/pi-base-server
+Restart=always
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=pi-base
+WorkingDirectory=/app/server
+
+[Install]
+WantedBy=multi-user.target

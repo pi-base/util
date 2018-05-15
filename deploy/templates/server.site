@@ -1,0 +1,10 @@
+server {
+    server_name viewer.counterexamples.info;
+    root /app/viewer;
+    location / {
+        try_files $uri /index.html;
+    }
+    location ~ ^.+\..+$ {
+        try_files $uri =404;
+    }
+}
