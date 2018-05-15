@@ -19,8 +19,10 @@ Client.boot db_url: "postgresql://localhost:5432/pi_base_development"
 RSpec.describe Client do
   let(:repo) { Repos::Working }
 
-  before :each do
-    repo.reset
+  around :each do |ex|
+    initials = repo.branch_states
+    ex.call
+    repo.reset initials
   end
 
   xit 'can fetch branches' do

@@ -1,4 +1,6 @@
+require 'hashie'
 require 'rugged'
+require 'yaml'
 
 class Repo
   attr_reader :repo
@@ -8,6 +10,7 @@ class Repo
       contents = blob.content
 
       page = Hashie::Mash.new YAML.load contents
+      page.oid = blob.oid
       page.path = path
       page.description = contents.split('---').last.strip
       page
@@ -17,20 +20,22 @@ class Repo
   def initialize path
     @path = path
     @repo = Rugged::Repository.new path
-
-    @initial = branches.each_with_object({}) do |b,h|
-      h[b.name] = b.target.oid
-    end
   end
 
   def user_branch user
     branches["users/#{user.name}"]
   end
 
-  def reset
+  def branch_states
+    branches.each_with_object({}) do |b,h|
+      h[b.name] = b.target.oid
+    end
+  end
+
+  def reset initials
     current = branches.to_a
     current.each do |b|
-      previous = @initial[b.name]
+      previous = initials[b.name]
       if previous && previous != b.target.oid
         branches.delete b.name
         branches.create b.name, previous
@@ -38,14 +43,26 @@ class Repo
     end
   end
 
-  def walk tree, *paths
+  def dig tree, *paths
     paths.reduce tree do |t, path|
       lookup t[path.to_s][:oid]
     end
   end
 
+  def each_page branch='master'
+    return enum_for(:each_page, branch) unless block_given?
+
+    tree = branches[branch].target.tree
+    tree.walk_blobs do |prefix, meta|
+      next if prefix.empty?
+      blob = repo.lookup meta[:oid]
+      page = Page.load path: "#{prefix}#{meta[:name]}", blob: blob
+      yield page
+    end
+  end
+
   def page commit, *paths
-    blob = walk commit.tree, *paths
+    blob = dig commit.tree, *paths
     Page.load path: paths.join('/'), blob: blob
   end
 
