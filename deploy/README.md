@@ -21,7 +21,7 @@ Build
 
 Deploy
 
-    scp -r build/ pibase:/app/viewer/
+    cd build && scp -r . pibase:/app/viewer/
 
 ## Other useful commands
 

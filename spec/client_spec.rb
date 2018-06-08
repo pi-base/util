@@ -3,13 +3,6 @@ require 'spec_helper'
 require_relative '../client'
 require_relative '../repo'
 
-DATA_DIR = File.expand_path '../data'
-
-module Repos
-  Working    = Repo.new "#{DATA_DIR}/repo.git"
-  Downstream = Repo.new "#{DATA_DIR}/downstream.git"
-end
-
 Client.domain = 'http://localhost:3141'
 Client.boot db_url: "postgresql://localhost:5432/pi_base_development"
 
