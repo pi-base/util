@@ -1,54 +1,124 @@
 ---
 - hosts: pibase
   remote_user: ubuntu
+  vars_files:
+    - vars.yml
+    - vault.yml
   tasks:
-    # Install and set up nginx / vhosts
-    - name: Install nginx
-      become: yes
+    # System dependencies
+    - name: Create app user
+      become: true
+      user:
+        name: pibase
+        home: /app
+        shell: /bin/bash
+
+    - name: Install packages
+      become: true
       apt:
-        name: nginx
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - git
+        - nginx
+        - postgresql
+        - python-setuptools
+
+    - name: Install pip
+      become: true
+      easy_install:
+        name: pip
+
+    - name: Install python packages
+      become: true
+      pip:
+        name: awscli
         state: latest
 
-    # TODO: cross-reference the .site files in templates with the active config 
-    # and install them in active-sites
-
-    # Install postgresql
-    - name: Install postgresql
-      become: yes
-      apt:
-        name: postgresql
-        state: latest
-
-    # TODO: configure initial database, user, password
-
-    # Create directories
-    - name: Create data directory
+    - name: Create root app directories
+      become: true
       file:
-        path: /app/data
+        path: "{{ item }}"
         state: directory
-    - name: Create server directory
-      file:
-        path: /app/server
-        state: directory
-    - name: Create frontend directory
-      file:
-        path: /app/viewer
-        state: directory
-     
-    # Install git and clone repo
-    - name: Install git
-      become: yes
-      apt:
-        name: git
-        state: latest
-      
-    # TODO: configure /app/server/.env ?
-    # These settings are sensitive, but we could at least provide an example
-        
-    # Install initial versions of front / backend
+        owner: pibase
+      with_items:
+        - /app
+        - /app/data
+        - /app/server
+        - /app/viewer
+        - /app/.aws
+
+    - block:
+        # Deploy
+        - name: Configure AWS S3 access
+          template:
+            src: templates/s3.{{ item }}.j2
+            dest: /app/.aws/{{ item }}
+            owner: pibase
+          with_items:
+            - config
+            - credentials
+
+        # Data
+        - name: Clone data repo
+          git:
+            repo: https://github.com/pi-base/data
+            dest: /app/data/repo.git
+
+        - name: Configure branches
+          template:
+            src: templates/repo.config.j2
+            dest: /app/data/repo.git/config
+            owner: pibase
+
+        # Server
+        - name: Clone server support files
+          command: aws s3 sync s3://pi-base/deploy/server/{{ item }} /app/server/{{ item }}
+          args:
+            creates: /app/server/{{ item }}
+          with_items:
+            - pibase
+            - config
+            - static
+
+        - name: Configure environment file
+          template:
+            src: templates/server.env.j2
+            dest: /app/server/.env
+            owner: pibase
+
+        # Viewer
+        - name: Clone viewer files
+          command: aws s3 sync s3://pi-base/deploy/viewer /app/viewer
+          become: true
+          become_user: pibase
+          args:
+            creates: /app/viewer/index.html
+      become: true
+      become_user: pibase
+
+    # Service configuration
     - name: Configure service
       become: yes
       copy:
         src: templates/pi-base.service
         dest: /etc/systemd/system/pi-base.service
-    # TODO: do we need to `systemctl daemon-reload`? Only on change?
+
+    - name: Configure nginx sites
+      become: yes
+      copy:
+        src: templates/{{ item }}.site
+        dest: /etc/nginx/sites-available/{{ item }}.site
+      with_items:
+        - server
+        - viewer
+
+    - name: Link and enable nginx sites
+      become: yes
+      file:
+        src: /etc/nginx/sites-available/{{ item }}.site
+        dest: /etc/nginx/sites-enabled/{{ item }}.site
+        state: link
+      with_items:
+        - server
+        - viewer

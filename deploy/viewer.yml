@@ -1,0 +1,19 @@
+---
+- hosts: pibase
+  remote_user: ubuntu
+  tasks:
+    - block:
+        - name: Start mainentance mode
+          file:
+            path: /app/maintenance.on
+            state: touch
+        - name: Pull build files
+          raw:
+            aws s3 cp s3://pi-base/deploy/viewer /app/viewer
+        - name: Stop mainentance mode
+          file:
+            path: /app/maintenance.on
+            state: absent
+      become: true
+      become_user: pibase
+

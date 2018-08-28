@@ -2,26 +2,31 @@
 
 We're working towards managing this through `ansible`. You should be able to
 
-    ansible-playbook deploy/install.yml
-    ansible-playbook deploy/server.yml --extra-vars '{ "server_version": ... }'
-
-assuming your `~/.ansible.cnf` / `/etc/ansible/hosts` are configured with the pibase host and secret key. Refer to those playbooks for details.
+    ansible-playbook install.yml
 
 ## Error Logs
 
-The `.service` file defines log routing. Assuming they are going to syslog - 
+The `.service` file defines log routing. Assuming they are going to syslog -
 
     tail -f /var/log/syslog | grep pi-base
+
+## Deploying the Server
+
+Builds are automatically uploaded to S3 as part of the CI process
+
+Deploy
+
+    ansible-playbook server.yml
 
 ## Deploying the Viewer
 
 Build
 
-    yarn build
+    yarn build && aws s3 sync build s3://pi-base/deploy/viewer
 
 Deploy
 
-    cd build && scp -r . pibase:/app/viewer/
+    ansible-playbook viewer.yml
 
 ## Other useful commands
 
@@ -31,5 +36,4 @@ Service commands
 
 Reset bare repo branch
 
-    git update-ref refs/heads/users/jamesdabbs d71e74370ea1d293197fdffd5f89c357ed45a273 
-
+    git update-ref refs/heads/users/jamesdabbs d71e74370ea1d293197fdffd5f89c357ed45a273
