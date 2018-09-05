@@ -1,4 +1,8 @@
+db_host: "{{ vault_db_host }}"
+db_name: "{{ vault_db_name }}"
 db_password: "{{ vault_db_password }}"
+db_user: "{{ vault_db_user }}"
+
 error_token: "{{ vault_error_token }}"
 github_client_id: "{{ vault_github_client_id }}"
 github_client_secret: "{{ vault_github_client_secret }}"

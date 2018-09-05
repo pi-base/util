@@ -1,10 +1,11 @@
 [Service]
 EnvironmentFile=/app/server/.env
-ExecStart=/app/server/pi-base-server
+ExecStart=/app/server/pibase server
 Restart=always
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=pi-base
+SyslogIdentifier=pibase
+User=pibase
 WorkingDirectory=/app/server
 
 [Install]

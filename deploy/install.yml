@@ -5,6 +5,12 @@
     - vars.yml
     - vault.yml
   tasks:
+    - name: Add another bin dir to system-wide $PATH.
+      copy:
+        dest: /etc/profile.d/custom-path.sh
+        content: 'PATH=$PATH:/app/server'
+      become: true
+
     # System dependencies
     - name: Create app user
       become: true
@@ -12,6 +18,34 @@
         name: pibase
         home: /app
         shell: /bin/bash
+        group: pibase
+        groups:
+          - pibase
+
+    - name: Create user
+      user:
+        name: "{{ item }}"
+        shell: /bin/bash
+        group: pibase
+        groups:
+          - sudo
+          - pibase
+      become: true
+      with_items:
+        - james
+        - steven
+    - name: Add key for user
+      authorized_key:
+        user: "{{ item.name }}"
+        state: present
+        key: https://github.com/{{ item.github }}.keys
+      become: true
+      with_items:
+        - name: james
+          github: jamesdabbs
+        - name: steven
+          github: stevenclontz
+    # TODO: setup base git config for each user (needed for CLI commits)
 
     - name: Install packages
       become: true
@@ -61,9 +95,12 @@
 
         # Data
         - name: Clone data repo
-          git:
-            repo: https://github.com/pi-base/data
-            dest: /app/data/repo.git
+          command: |
+            git clone --mirror https://github.com/pi-base/data /app/data/repo.git
+            find /app/data/repo.git -type d | xargs chmod g+ws
+            find /app/data/repo.git/refs -type f | xargs --no-run-if-empty chmod g+w
+          args:
+            creates: /app/data/repo.git
 
         - name: Configure branches
           template:
@@ -101,8 +138,8 @@
     - name: Configure service
       become: yes
       copy:
-        src: templates/pi-base.service
-        dest: /etc/systemd/system/pi-base.service
+        src: templates/pibase.service
+        dest: /etc/systemd/system/pibase.service
 
     - name: Configure nginx sites
       become: yes
@@ -112,6 +149,13 @@
       with_items:
         - server
         - viewer
+
+    - name: Copy maintenance page
+      become: yes
+      become_user: pibase
+      copy:
+        src: templates/maintenance.html
+        dest: /app/maintenance.html
 
     - name: Link and enable nginx sites
       become: yes

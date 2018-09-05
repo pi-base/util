@@ -8,7 +8,7 @@ We're working towards managing this through `ansible`. You should be able to
 
 The `.service` file defines log routing. Assuming they are going to syslog -
 
-    tail -f /var/log/syslog | grep pi-base
+    tail -f /var/log/syslog | grep pibase
 
 ## Deploying the Server
 
@@ -22,7 +22,7 @@ Deploy
 
 Build
 
-    yarn build && aws s3 sync build s3://pi-base/deploy/viewer
+    yarn deploy
 
 Deploy
 

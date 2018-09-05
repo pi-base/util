@@ -14,17 +14,26 @@
     - name: Stop service
       become: true
       service:
-        name: pi-base
+        name: pibase
         state: stopped
     - name: Pull binary
       become: true
       become_user: pibase
-      raw:
-        aws s3 cp s3://pi-base/deploy/server/pibase /app/server/pibase
+      raw: aws s3 cp s3://pi-base/deploy/server/pibase /app/server
+    - name: Chmod binary
+      become: true
+      become_user: pibase
+      file:
+        path: /app/server/pibase
+        mode: 0755
+    - name: Pull graph
+      become: true
+      become_user: pibase
+      raw: aws s3 sync s3://pi-base/deploy/graph /app/server/graph
     - name: Restart service
       become: true
       service:
-        name: pi-base
+        name: pibase
         state: started
     - name: Stop mainentance mode
       become: true
